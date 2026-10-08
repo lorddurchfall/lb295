@@ -10,6 +10,21 @@ use App\service\AuthService;
 use App\service\CategoryService;
 use App\service\ProductService;
 
+/**
+ *Shows on base localhost if it runs.
+ */
+$app->get('/', function ($request, $response) {
+    $response->getBody()->write(
+        json_encode([
+            'message' => 'LB295 API is running'
+        ])
+    );
+
+    return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+});
+
 /*
  * Create repositories.
  */
