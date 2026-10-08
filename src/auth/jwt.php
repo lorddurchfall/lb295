@@ -2,14 +2,17 @@
 
 namespace App\auth;
 
-use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 class JwtAuth
 {
+    // The token is valid for one hour.
     private const EXPIRATION_TIME = 3600;
 
+    /**
+     * Creates a new signed JWT.
+     */
     public static function createToken(string $username): string
     {
         $payload = [
@@ -25,6 +28,9 @@ class JwtAuth
         );
     }
 
+    /**
+     * Checks whether a JWT is valid.
+     */
     public static function validateToken(string $token): bool
     {
         try {
@@ -34,7 +40,8 @@ class JwtAuth
             );
 
             return true;
-        } catch (Exception $e) {
+
+        } catch (\Throwable $exception) {
             return false;
         }
     }

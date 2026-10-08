@@ -6,28 +6,31 @@ use mysqli;
 
 class Database
 {
-    private $connection;
+    private mysqli $connection;
 
+    /**
+     * Creates a connection to the MySQL database.
+     */
     public function __construct()
     {
-        $conn = new mysqli(
-            "mysql",
-            "slimuser",
-            "password",
-            "slimdb",
-            3306
+        $this->connection = new mysqli(
+            $_ENV['DB_HOST'],
+            $_ENV['DB_USERNAME'],
+            $_ENV['DB_PASSWORD'],
+            $_ENV['DB_DATABASE'],
+            (int) $_ENV['DB_PORT']
         );
 
-        if ($conn->connect_error) {
-            die("DB Fehler: " . $conn->connect_error);
+        if ($this->connection->connect_error) {
+            die('Database connection failed');
         }
-        $this->connection = $conn;
     }
 
-    public function getConnection()
+    /**
+     * Returns the active mysqli connection.
+     */
+    public function getConnection(): mysqli
     {
         return $this->connection;
     }
 }
-
-

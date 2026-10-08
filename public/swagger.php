@@ -1,24 +1,27 @@
 <?php
 
-require __DIR__ . "/../vendor/autoload.php";
+// Load Composer autoload.
+require __DIR__ . '/../vendor/autoload.php';
 
-// Require all PHP files within /src
-$scripts = glob(__DIR__ . "/../src/*.php");
-$controller = glob(__DIR__ . "/../src/controller/*.php");
+// Load all controller files so swagger-php can find the attributes.
+$controllers = glob(
+    __DIR__ . '/../src/controller/*.php'
+);
 
-foreach ($scripts as $script) {
-    require_once $script;
+foreach ($controllers as $controller) {
+    require_once $controller;
 }
 
-foreach ($controller as $script) {
-    require_once $script;
-}
-
-// Build and return OpenAPI documentation as YAML
+// Build the OpenAPI specification.
 $result = (new \OpenApi\Builder())
-    ->addSource(__DIR__ . "/../src")
+    ->addSource(
+        __DIR__ . '/../src'
+    )
     ->build();
 
-header('Content-Type: application/x-yaml');
+// Return the generated documentation as YAML.
+header(
+    'Content-Type: application/x-yaml'
+);
 
 echo $result->toYaml();

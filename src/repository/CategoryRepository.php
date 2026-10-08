@@ -13,74 +13,146 @@ class CategoryRepository
         $this->db = $db;
     }
 
-    public function getCategories(): array
+    /**
+     * Returns all categories.
+     */
+    public function getAll(): array
     {
         $stmt = $this->db->prepare(
-            "SELECT * FROM categories"
+            "SELECT
+                category_id AS id,
+                active,
+                name
+             FROM category"
         );
 
         $stmt->execute();
 
-        $result = $stmt->get_result();
-
-        return $result->fetch_all(MYSQLI_ASSOC);
+        return $stmt
+            ->get_result()
+            ->fetch_all(MYSQLI_ASSOC);
     }
 
+    /**
+     * Returns one category by ID.
+     */
     public function getCategoryById(int $id): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT * FROM categories WHERE id = ?"
+            "SELECT
+                category_id AS id,
+                active,
+                name
+             FROM category
+             WHERE category_id = ?"
         );
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
-        $result = $stmt->get_result();
-
-        return $result->fetch_assoc() ?: null;
+        return $stmt
+            ->get_result()
+            ->fetch_assoc() ?: null;
     }
 
-    public function createCategory(string $name): int
+    /**
+     * Checks whether a category exists.
+     */
+    public function existsById(int $id): bool
+    {
+        return $this->getCategoryById($id) !== null;
+    }
+
+    /**
+     * Checks whether a category name already exists.
+     */
+    public function existsByName(string $name): bool
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO categories (name)
-             VALUES (?)"
+            "SELECT category_id
+             FROM category
+             WHERE name = ?"
         );
 
         $stmt->bind_param("s", $name);
         $stmt->execute();
 
-        return $this->db->insert_id;
+        return $stmt->get_result()->num_rows > 0;
     }
 
-    public function updateCategory(
-        int    $id,
+    /**
+     * Creates a new category.
+     */
+    public function createCategory(
+        int $active,
         string $name
-    ): bool
-    {
+    ): array {
+
         $stmt = $this->db->prepare(
-            "UPDATE categories
-             SET name = ?
-             WHERE id = ?"
+            "INSERT INTO category
+             (active, name)
+             VALUES (?, ?)"
         );
 
         $stmt->bind_param(
-            "si",
+            "is",
+            $active,
+            $name
+        );
+
+        $stmt->execute();
+
+        return [
+            'id' => $this->db->insert_id,
+            'active' => $active,
+            'name' => $name
+        ];
+    }
+
+    /**
+     * Updates an existing category.
+     */
+    public function updateCategory(
+        int $id,
+        int $active,
+        string $name
+    ): array {
+
+        $stmt = $this->db->prepare(
+            "UPDATE category
+             SET active = ?, name = ?
+             WHERE category_id = ?"
+        );
+
+        $stmt->bind_param(
+            "isi",
+            $active,
             $name,
             $id
         );
 
-        return $stmt->execute();
+        $stmt->execute();
+
+        return [
+            'id' => $id,
+            'active' => $active,
+            'name' => $name
+        ];
     }
 
+    /**
+     * Deletes a category by ID.
+     */
     public function deleteCategory(int $id): bool
     {
         $stmt = $this->db->prepare(
-            "DELETE FROM categories WHERE id = ?"
+            "DELETE FROM category
+             WHERE category_id = ?"
         );
 
         $stmt->bind_param("i", $id);
+        $stmt->execute();
 
-        return $stmt->execute();
+        return $stmt->affected_rows > 0;
     }
 }

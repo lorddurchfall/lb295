@@ -13,124 +13,202 @@ class ProductRepository
         $this->db = $db;
     }
 
-    // GET /products
-    public function getProducts(): array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM products");
-        $stmt->execute();
-
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    }
-
-    // GET /products/{sku}
-    public function getProduct(string $sku): ?array
+    /**
+     * Returns all products.
+     */
+    public function getAll(): array
     {
         $stmt = $this->db->prepare(
-            "SELECT * FROM products WHERE sku = ?"
+            "SELECT
+                product_id AS id,
+                sku,
+                active,
+                id_category,
+                name,
+                image,
+                description,
+                price,
+                stock
+             FROM product"
+        );
+
+        $stmt->execute();
+
+        return $stmt
+            ->get_result()
+            ->fetch_all(MYSQLI_ASSOC);
+    }
+
+    /**
+     * Checks whether a product with the given SKU exists.
+     */
+    public function productExists(string $sku): bool
+    {
+        $stmt = $this->db->prepare(
+            "SELECT product_id
+             FROM product
+             WHERE sku = ?"
         );
 
         $stmt->bind_param("s", $sku);
         $stmt->execute();
 
-        return $stmt->get_result()->fetch_assoc() ?: null;
+        return $stmt->get_result()->num_rows > 0;
     }
 
-    // POST /products
-    public function postProduct(
+    /**
+     * Returns one product by SKU.
+     */
+    public function getProductBySku(string $sku): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT
+                product_id AS id,
+                sku,
+                active,
+                id_category,
+                name,
+                image,
+                description,
+                price,
+                stock
+             FROM product
+             WHERE sku = ?"
+        );
+
+        $stmt->bind_param("s", $sku);
+        $stmt->execute();
+
+        return $stmt
+            ->get_result()
+            ->fetch_assoc() ?: null;
+    }
+
+    /**
+     * Creates a new product.
+     */
+    public function createProduct(
         string $sku,
-        string $name,
-        float $price,
-        int $categoryId
-    ): int {
-        $existingProduct = $this->getProduct($sku);
+        array $data
+    ): array {
 
-        if ($existingProduct !== null) {
-            $this->putProduct(
-                $sku,
-                $name,
-                $price,
-                $categoryId
-            );
-
-            return $existingProduct['id'];
-        }
+        $active = $data['active'];
+        $categoryId = $data['id_category'];
+        $name = $data['name'];
+        $image = $data['image'];
+        $description = $data['description'];
+        $price = (float) $data['price'];
+        $stock = $data['stock'];
 
         $stmt = $this->db->prepare(
-            "INSERT INTO products (sku, name, price, category_id)
-             VALUES (?, ?, ?, ?)"
+            "INSERT INTO product
+             (
+                sku,
+                active,
+                id_category,
+                name,
+                image,
+                description,
+                price,
+                stock
+             )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         $stmt->bind_param(
-            "ssdi",
+            "siisssdi",
             $sku,
+            $active,
+            $categoryId,
             $name,
+            $image,
+            $description,
             $price,
-            $categoryId
+            $stock
         );
 
         $stmt->execute();
 
-        return $this->db->insert_id;
+        return $this->getProductBySku($sku);
     }
 
-    // PUT /products/{sku}
-    public function putProduct(
+    /**
+     * Updates an existing product.
+     */
+    public function updateProduct(
         string $sku,
-        string $name,
-        float $price,
-        int $categoryId
-    ): bool {
+        array $data
+    ): array {
+
+        $active = $data['active'];
+        $categoryId = $data['id_category'];
+        $name = $data['name'];
+        $image = $data['image'];
+        $description = $data['description'];
+        $price = (float) $data['price'];
+        $stock = $data['stock'];
+
         $stmt = $this->db->prepare(
-            "UPDATE products
-             SET name = ?, price = ?, category_id = ?
+            "UPDATE product
+             SET active = ?,
+                 id_category = ?,
+                 name = ?,
+                 image = ?,
+                 description = ?,
+                 price = ?,
+                 stock = ?
              WHERE sku = ?"
         );
 
         $stmt->bind_param(
-            "sdis",
-            $name,
-            $price,
+            "iisssdis",
+            $active,
             $categoryId,
+            $name,
+            $image,
+            $description,
+            $price,
+            $stock,
             $sku
         );
 
-        return $stmt->execute();
+        $stmt->execute();
+
+        return $this->getProductBySku($sku);
     }
 
-    // PATCH /products/{sku}
-    public function patchProduct(
-        string $sku,
-        ?string $name = null,
-        ?float $price = null,
-        ?int $categoryId = null
-    ): bool {
-        $product = $this->getProduct($sku);
-
-        if ($product === null) {
-            return false;
-        }
-
-        $name = $name ?? $product['name'];
-        $price = $price ?? $product['price'];
-        $categoryId = $categoryId ?? $product['category_id'];
-
-        return $this->putProduct(
-            $sku,
-            $name,
-            $price,
-            $categoryId
-        );
-    }
-
-    // DELETE /products/{sku}
+    /**
+     * Deletes a product by SKU.
+     */
     public function deleteProduct(string $sku): bool
     {
         $stmt = $this->db->prepare(
-            "DELETE FROM products WHERE sku = ?"
+            "DELETE FROM product
+             WHERE sku = ?"
         );
 
         $stmt->bind_param("s", $sku);
+        $stmt->execute();
 
-        return $stmt->execute();
+        return $stmt->affected_rows > 0;
+    }
+
+    /**
+     * Checks whether a category is still used by a product.
+     */
+    public function productExistsWithCategoryId(
+        int $categoryId
+    ): bool {
+
+        $stmt = $this->db->prepare(
+            "SELECT product_id
+             FROM product
+             WHERE id_category = ?"
+        );
+
+        $stmt->bind_param("i", $categoryId);
+        $stmt->execute();
+
+        return $stmt->get_result()->num_rows > 0;
     }
 }

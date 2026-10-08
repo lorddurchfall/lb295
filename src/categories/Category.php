@@ -4,57 +4,69 @@ namespace App\categories;
 
 class Category
 {
+    /**
+     * Validates data when creating a category.
+     */
     public static function validateCreate(array $data): array
     {
         $errors = [];
 
-        // Active
-        if (!array_key_exists('active', $data)) {
-            $errors[] = 'active is required';
-        } elseif (!self::isValidBoolean($data['active'])) {
-            $errors[] = 'active must be true, false, 0 or 1';
+        // Validate active.
+        if (
+            !array_key_exists('active', $data) ||
+            !in_array($data['active'], [0, 1], true)
+        ) {
+            $errors[] = 'Invalid active';
         }
 
-        // Name
-        if (!isset($data['name']) || !is_string($data['name']) || trim($data['name']) === '') {
-            $errors[] = 'name is required and must be a string';
+        // Validate name.
+        if (
+            !isset($data['name']) ||
+            !is_string($data['name']) ||
+            trim($data['name']) === ''
+        ) {
+            $errors[] = 'Invalid name';
+
         } elseif (strlen($data['name']) > 500) {
-            $errors[] = 'name must not be longer than 500 characters';
+            $errors[] = 'Name must not exceed 500 characters';
         }
 
         return $errors;
     }
 
+    /**
+     * Validates data when updating a category.
+     */
     public static function validatePatch(array $data): array
     {
         $errors = [];
 
-        // Active nur prüfen, wenn mitgeschickt
-        if (array_key_exists('active', $data)) {
-            if (!self::isValidBoolean($data['active'])) {
-                $errors[] = 'active must be true, false, 0 or 1';
-            }
-        }
-
-        // Name nur prüfen, wenn mitgeschickt
-        if (array_key_exists('name', $data)) {
-            if (!is_string($data['name']) || trim($data['name']) === '') {
-                $errors[] = 'name must be a non-empty string';
-            } elseif (strlen($data['name']) > 500) {
-                $errors[] = 'name must not be longer than 500 characters';
-            }
-        }
-
-        // PATCH ohne Daten bringt nichts
         if (empty($data)) {
-            $errors[] = 'at least one field must be provided';
+            $errors[] = 'At least one field is required';
+        }
+
+        // Validate active only when it was provided.
+        if (
+            array_key_exists('active', $data) &&
+            !in_array($data['active'], [0, 1], true)
+        ) {
+            $errors[] = 'Invalid active';
+        }
+
+        // Validate name only when it was provided.
+        if (array_key_exists('name', $data)) {
+
+            if (
+                !is_string($data['name']) ||
+                trim($data['name']) === ''
+            ) {
+                $errors[] = 'Invalid name';
+
+            } elseif (strlen($data['name']) > 500) {
+                $errors[] = 'Name must not exceed 500 characters';
+            }
         }
 
         return $errors;
-    }
-
-    private static function isValidBoolean($value): bool
-    {
-        return is_bool($value) || $value === 0 || $value === 1;
     }
 }
