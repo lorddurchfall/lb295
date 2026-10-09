@@ -9,25 +9,31 @@ class Database
     private mysqli $connection;
 
     /**
-     * Creates a connection to the MySQL database.
+     * Opens a connection to the local XAMPP MySQL database.
      */
     public function __construct()
     {
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+        $host = getenv('DB_HOST') ?: '127.0.0.1';
+        $username = getenv('DB_USERNAME') ?: 'root';
+        $password = getenv('DB_PASSWORD') ?: '';
+        $database = getenv('DB_DATABASE') ?: 'lb295';
+        $port = (int) (getenv('DB_PORT') ?: 3306);
+
         $this->connection = new mysqli(
-            $_ENV['DB_HOST'],
-            $_ENV['DB_USERNAME'],
-            $_ENV['DB_PASSWORD'],
-            $_ENV['DB_DATABASE'],
-            (int) $_ENV['DB_PORT']
+            $host,
+            $username,
+            $password,
+            $database,
+            $port
         );
 
-        if ($this->connection->connect_error) {
-            die('Database connection failed');
-        }
+        $this->connection->set_charset('utf8mb4');
     }
 
     /**
-     * Returns the active mysqli connection.
+     * Returns the active database connection.
      */
     public function getConnection(): mysqli
     {

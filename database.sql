@@ -1,4 +1,8 @@
-USE slimdb;
+CREATE DATABASE IF NOT EXISTS lb295
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE lb295;
 
 -- Drop the product table first because it references category.
 DROP TABLE IF EXISTS product;
